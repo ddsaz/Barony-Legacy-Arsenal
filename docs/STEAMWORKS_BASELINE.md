@@ -55,7 +55,7 @@ The Windows build uses vcpkg packages for SDL2, SDL2_image, SDL2_net, SDL2_ttf, 
 - Windows `GetObject` macro isolation through `src/windows_msvc_compat.hpp`.
 - C++17 compilation.
 - GLEW include and link configuration.
-- Steamworks statistics compatibility for SDKs where `RequestCurrentStats()` is no longer exposed. The build script applies the repository patch temporarily and restores the source afterwards, leaving the working tree clean.
+- Steamworks statistics compatibility for SDKs where `RequestCurrentStats()` is no longer exposed. The repository build script applies the compatibility transformation temporarily and restores the original source bytes in a `finally` block, leaving the working tree clean even when compilation fails.
 
 ## Branch policy
 
