@@ -1,0 +1,17 @@
+diff --git a/src/steam_shared.cpp b/src/steam_shared.cpp
+--- a/src/steam_shared.cpp
++++ b/src/steam_shared.cpp
+@@ -211,8 +211,11 @@ bool CSteamStatistics::RequestStats()
+ 	{
+ 		return false;
+ 	}
+-	// Request user stats.
+-	return SteamUserStats()->RequestCurrentStats();
++	// RequestCurrentStats() was removed from newer Steamworks SDK headers.
++	// Request the local user's stats explicitly so Barony still receives the
++	// UserStatsReceived_t callback and initializes its cached stat values.
++	const SteamAPICall_t request = SteamUserStats()->RequestUserStats(SteamUser()->GetSteamID());
++	return request != k_uAPICallInvalid;
+ }
+ 
+ bool CSteamStatistics::RequestGlobalStats()
