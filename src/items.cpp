@@ -25,6 +25,7 @@
 #include "net.hpp"
 #include "player.hpp"
 #include "mod_tools.hpp"
+#include "legacy_arsenal.hpp"
 
 #include <assert.h>
 
@@ -867,7 +868,10 @@ char* Item::description() const
 				}
 				else
 				{
-					snprintf(&tempstr[c], 1024 - c, "%s", items[type].getIdentifiedName());
+					snprintf(&tempstr[c], 1024 - c, "%s",
+					LegacyArsenal::isPaladinLegacySword(this)
+						? LegacyArsenal::PALADIN_LEGACY_SWORD_NAME
+						: items[type].getIdentifiedName());
 				}
 			}
 			else
@@ -945,7 +949,10 @@ char* Item::description() const
 				}
 				else
 				{
-					snprintf(&tempstr[c], 1024 - c, "%s", items[type].getIdentifiedName());
+					snprintf(&tempstr[c], 1024 - c, "%s",
+					LegacyArsenal::isPaladinLegacySword(this)
+						? LegacyArsenal::PALADIN_LEGACY_SWORD_NAME
+						: items[type].getIdentifiedName());
 				}
 			}
 			else
@@ -1149,6 +1156,11 @@ Category itemCategory(const Item* const item)
 
 char* Item::getName() const
 {
+	if ( LegacyArsenal::isPaladinLegacySword(this) )
+	{
+		snprintf(tempstr, sizeof(tempstr), "%s", LegacyArsenal::PALADIN_LEGACY_SWORD_NAME);
+		return tempstr;
+	}
 	if ( type >= 0 && type < NUMITEMS )
 	{
 		if ( identified )
