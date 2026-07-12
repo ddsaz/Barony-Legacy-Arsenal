@@ -116,7 +116,7 @@ Confirma primero el hito M0 antes de aplicar M1.
         '',
         "`tif ( LegacyArsenal::isPaladinLegacySword(this) )",
         "`t{",
-        "`t`tsnprintf(tempstr, sizeof(tempstr), \"%s\", LegacyArsenal::PALADIN_LEGACY_SWORD_NAME);",
+        "`t`tsnprintf(tempstr, sizeof(tempstr), `"%s`", LegacyArsenal::PALADIN_LEGACY_SWORD_NAME);",
         "`t`treturn tempstr;",
         "`t}"
     ) -join $lineEnding
