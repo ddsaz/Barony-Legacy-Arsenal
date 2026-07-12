@@ -10,6 +10,10 @@ namespace LegacyArsenal
 	// this marker keeps the normal claymore placeholder model.
 	constexpr Uint32 PALADIN_LEGACY_SWORD_APPEARANCE = 0x4C415331u; // "LAS1"
 
+	// Provisional English display name. Localised names will move into the
+	// language data once the item becomes a dedicated ItemType.
+	constexpr const char* PALADIN_LEGACY_SWORD_NAME = "Oathblade";
+
 	inline bool isPaladinLegacySword(const Item* item)
 	{
 		return item
