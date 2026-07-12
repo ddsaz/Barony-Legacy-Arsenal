@@ -20,6 +20,7 @@
 #include "charclass.hpp"
 #include "player.hpp"
 #include "mod_tools.hpp"
+#include "legacy_arsenal.hpp"
 
 /*-------------------------------------------------------------------------------
 
@@ -3316,7 +3317,7 @@ void initClass(const int player)
 			useItem(item, player);
 		}
 
-		item = newItem(CLAYMORE_SWORD, SERVICABLE, 0, 1, 0, true, nullptr);
+		item = newItem(CLAYMORE_SWORD, SERVICABLE, 0, 1, LegacyArsenal::PALADIN_LEGACY_SWORD_APPEARANCE, true, nullptr);
 		if ( isLocalPlayer )
 		{
 			item2 = itemPickup(player, item);
