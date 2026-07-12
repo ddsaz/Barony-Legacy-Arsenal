@@ -6,6 +6,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$temporaryPath = $null
 
 try {
     if ([string]::IsNullOrWhiteSpace($RepoPath)) {
@@ -31,7 +32,7 @@ try {
     $functionStart = $text.IndexOf("function Replace-Exact {", [StringComparison]::Ordinal)
     $nextFunction = $text.IndexOf("function Read-SourceFile {", $functionStart, [StringComparison]::Ordinal)
     if ($functionStart -lt 0 -or $nextFunction -lt 0) {
-        throw "No se pudo localizar la función Replace-Exact del script M2A."
+        throw "No se pudo localizar la funcion Replace-Exact del script M2A."
     }
 
     $replacementFunction = @'
@@ -44,15 +45,32 @@ function Replace-Exact {
         [Parameter(Mandatory = $true)][string]$Label
     )
 
-    $exactCount = ([regex]::Matches($Text.Value, [regex]::Escape($Old))).Count
-    if ($exactCount -eq $ExpectedCount) {
-        $Text.Value = $Text.Value.Replace($Old, $New)
+    # [ref] sobre una propiedad (por ejemplo [ref]$main.Text) no conserva de
+    # forma fiable la asignacion en Windows PowerShell 5.1. Modificamos
+    # directamente los objetos de estado usados por el script original.
+    $candidateStates = @($net, $interface, $menu, $main) | Where-Object {
+        $_ -ne $null -and $_.PSObject.Properties.Name -contains 'Text'
+    }
+
+    $exactCounts = @()
+    $totalExact = 0
+    foreach ($state in $candidateStates) {
+        $count = ([regex]::Matches($state.Text, [regex]::Escape($Old))).Count
+        $exactCounts += $count
+        $totalExact += $count
+    }
+
+    if ($totalExact -eq $ExpectedCount) {
+        for ($i = 0; $i -lt $candidateStates.Count; $i++) {
+            if ($exactCounts[$i] -gt 0) {
+                $candidateStates[$i].Text = $candidateStates[$i].Text.Replace($Old, $New)
+            }
+        }
         return
     }
 
-    # The upstream source mixes tabs and spaces, and some equivalent blocks use
-    # different indentation depths. Always try the whitespace-tolerant pattern
-    # before reporting a mismatch, even if a subset matched exactly.
+    # The upstream source mixes tabs and spaces, and equivalent blocks can use
+    # different indentation depths. Build a whitespace-tolerant pattern.
     $patternBuilder = New-Object Text.StringBuilder
     $insideHorizontalWhitespace = $false
     foreach ($character in $Old.ToCharArray()) {
@@ -70,16 +88,32 @@ function Replace-Exact {
 
     $pattern = $patternBuilder.ToString()
     $regex = New-Object Text.RegularExpressions.Regex($pattern)
-    $matches = $regex.Matches($Text.Value)
-    if ($matches.Count -ne $ExpectedCount) {
-        throw "${Label}: se esperaban $ExpectedCount coincidencias; exactas=$exactCount, tolerantes=$($matches.Count)."
+    $tolerantCounts = @()
+    $totalTolerant = 0
+    foreach ($state in $candidateStates) {
+        $count = $regex.Matches($state.Text).Count
+        $tolerantCounts += $count
+        $totalTolerant += $count
+    }
+
+    if ($totalTolerant -ne $ExpectedCount) {
+        throw "${Label}: se esperaban $ExpectedCount coincidencias; exactas=$totalExact, tolerantes=$totalTolerant."
     }
 
     $evaluator = [Text.RegularExpressions.MatchEvaluator]{
         param($match)
         return $New
     }
-    $Text.Value = $regex.Replace($Text.Value, $evaluator, $ExpectedCount)
+
+    for ($i = 0; $i -lt $candidateStates.Count; $i++) {
+        if ($tolerantCounts[$i] -gt 0) {
+            $candidateStates[$i].Text = $regex.Replace(
+                $candidateStates[$i].Text,
+                $evaluator,
+                $tolerantCounts[$i]
+            )
+        }
+    }
 }
 
 '@
@@ -107,12 +141,12 @@ function Replace-Exact {
 
     if ($parseErrors.Count -gt 0) {
         $details = ($parseErrors | ForEach-Object {
-            "Línea $($_.Extent.StartLineNumber), columna $($_.Extent.StartColumnNumber): $($_.Message)"
+            "Linea $($_.Extent.StartLineNumber), columna $($_.Extent.StartColumnNumber): $($_.Message)"
         }) -join [Environment]::NewLine
         throw "La copia compatible no supera el parser:`n$details"
     }
 
-    Write-Host "[OK] Ejecutando M2A con comparación tolerante a tabulaciones y espacios." -ForegroundColor Green
+    Write-Host "[OK] Ejecutando M2A con compatibilidad para PowerShell 5.1." -ForegroundColor Green
     & $temporaryPath -RepoPath $RepoPath
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
