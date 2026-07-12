@@ -49,12 +49,10 @@ function Replace-Exact {
         $Text.Value = $Text.Value.Replace($Old, $New)
         return
     }
-    if ($exactCount -ne 0) {
-        throw "${Label}: se esperaban $ExpectedCount coincidencias exactas, pero se encontraron $exactCount."
-    }
 
-    # The upstream source mixes tabs and spaces. Build a fallback pattern where
-    # every horizontal-whitespace run accepts either representation.
+    # The upstream source mixes tabs and spaces, and some equivalent blocks use
+    # different indentation depths. Always try the whitespace-tolerant pattern
+    # before reporting a mismatch, even if a subset matched exactly.
     $patternBuilder = New-Object Text.StringBuilder
     $insideHorizontalWhitespace = $false
     foreach ($character in $Old.ToCharArray()) {
@@ -74,7 +72,7 @@ function Replace-Exact {
     $regex = New-Object Text.RegularExpressions.Regex($pattern)
     $matches = $regex.Matches($Text.Value)
     if ($matches.Count -ne $ExpectedCount) {
-        throw "${Label}: se esperaban $ExpectedCount coincidencias tolerantes a espacios, pero se encontraron $($matches.Count)."
+        throw "${Label}: se esperaban $ExpectedCount coincidencias; exactas=$exactCount, tolerantes=$($matches.Count)."
     }
 
     $evaluator = [Text.RegularExpressions.MatchEvaluator]{
